@@ -95,4 +95,10 @@ teacher 模拟调度和通信事件
 
 H0 表示仅根据低维画像恢复出的基础通信需求估计。伪请求列表由低维画像生成，丢失了真实窗口中的很多细节：比如精确请求顺序；极长请求的位置；真实 chunk 边界等，这个偏差由DNN来学习。
 
-## 
+拓展：
+
+| Teacher | 通常只需替换参数，不改算法                                   | 需要调整或扩展 teacher                                       |
+| ------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| TP      | 层数 \(L\)、hidden size \(H\)、BF16/FP16 activation dtype；Dense、GQA、普通 MoE，但仍维持每层两次 canonical AllReduce | 每层不再是两次 AllReduce；出现 EP All-to-All、Sequence/Context Parallel 的 AllGather/ReduceScatter；不同层通信次数或 hidden width 不同；通信压缩、量化或额外 scale/metadata；Mamba/多模态等出现额外通信分支 |
+| PP      | hidden size、activation dtype、层数变化；前提是每个 boundary 仍传固定两个相同形状的 proxy tensor | boundary tensor 数量不再是2；不同 stage 的 activation width 不同；encoder-decoder、跨层 skip、视觉塔等需要传额外 tensor；virtual/interleaved PP、异步 pipeline 或调度顺序变化 |
+| PD      | 普通 MHA/GQA 的层数、KV heads、head dim、dtype；当前支持的 DeepSeek MLA 参数 | Mamba/SSM state、SWA/全局注意力混合、不同层不同 KV 结构、cross-attention cache、KV 量化附带 scale/metadata、压缩 KV、额外状态传输、全新的 page/layout 对齐规则 |
